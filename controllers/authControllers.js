@@ -16,7 +16,6 @@ export const signup = async (req, res) => {
       aadharNo,
       aadharImage,
     } = req.body;
-    console.log(req.body);
     // Check if user already exists
     const userExists = await User.findOne({ email });
     if (userExists) {

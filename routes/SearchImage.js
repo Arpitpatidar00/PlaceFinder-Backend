@@ -89,7 +89,6 @@ router.get('/', async (req, res) => {
 // Route for deleting a place by ID
 router.delete('/:id', async (req, res) => {
   const { id } = req.params;
-  console.log("Deleting item with ID:", id); // Log ID for debugging
 
   // Validate ObjectId
   if (!mongoose.Types.ObjectId.isValid(id)) {

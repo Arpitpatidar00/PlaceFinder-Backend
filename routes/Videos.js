@@ -46,7 +46,6 @@ router.post('/upload', upload.single('video'), async (req, res) => {
       });
 
       await video.save();
-      console.log('Video Metadata:', video); // Log the video metadata
       res.status(200).json({ success: true, message: 'Video uploaded successfully', video });
     } catch (error) {
       res.status(500).json({ success: false, message: 'Failed to save video metadata', error });
@@ -74,14 +73,12 @@ router.delete('/:id', async (req, res) => {
     const { id } = req.params;
     const video = await Video.findById(id);
     if (!video) {
-      console.log('Video not found:', id);
       return res.status(404).json({ success: false, message: 'Video not found' });
     }
 
     await gfs.delete(video._id);
     await Video.findByIdAndDelete(id);
 
-    console.log('Video deleted successfully:', id);
     res.status(200).json({ success: true, message: 'Video deleted successfully' });
   } catch (error) {
     console.error('Error deleting video:', error);
