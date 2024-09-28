@@ -40,11 +40,8 @@ router.get('/search', async (req, res) => {
 
     // Prepare search criteria
     const searchCriteria = {};
-    if (cityName) {
-      searchCriteria.cityName = { $regex: new RegExp(cityName, 'i') };
-    }
-    if (placeName) {
-      searchCriteria.placeName = { $regex: new RegExp(placeName, 'i') };
+    if (cityName || placeName) {
+      searchCriteria.$text = { $search: `${cityName ? cityName : ''} ${placeName ? placeName : ''}` };
     }
 
     // Find places matching the search criteria
@@ -56,6 +53,7 @@ router.get('/search', async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 });
+
 
 // Route for searching a place by ID
 router.get('/:id', async (req, res) => {
@@ -79,11 +77,11 @@ router.get('/:id', async (req, res) => {
 // Route for getting all places
 router.get('/', async (req, res) => {
   try {
-    // Find all places
-    const places = await Place.find();
+    // Find 15 random places
+    const places = await Place.aggregate([{ $sample: { size: 15 } }]);
     res.json(places);
   } catch (error) {
-    console.error('Error getting all places:', error);
+    console.error('Error getting random places:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 });

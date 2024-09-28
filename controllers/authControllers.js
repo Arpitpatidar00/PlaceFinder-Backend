@@ -1,205 +1,75 @@
-import User from "../models/User.js";
-import Admin from "../models/Adminschema.js"
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
+import User from "../models/User.js";
+import { generateToken } from "../utils/jwtHelper.js";
 
-const ADMIN_USERNAME = "admin";
-const ADMIN_PASSWORD = "Arpit@007"; 
-
-export const register = async (req, res) => {
+// Signup
+export const signup = async (req, res) => {
   try {
     const {
-      username,
+      name,
       email,
       password,
       role,
-      image,
-      aadharNumber,
-      certificationAddress,
-      licenceNumber,
-      aadharFile,
-      certificationFile,
-      licenceFile,
-      Place,
-      mobileNumber,
-      Bio,
+      profileImage,
+      licenseNo,
+      licenseImage,
+      aadharNo,
+      aadharImage,
     } = req.body;
-
-    // Check if user with the same email exists
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({
-        success: false,
-        message: "User with this email already exists",
-      });
+    console.log(req.body);
+    // Check if user already exists
+    const userExists = await User.findOne({ email });
+    if (userExists) {
+      return res.status(400).json({ message: "User already exists" });
     }
 
     // Hash password
-    const salt = bcrypt.genSaltSync(10);
-    const hash = bcrypt.hashSync(password, salt);
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Save base64 encoded image data to the database
+    // Create new user
     const newUser = new User({
-      username,
+      name,
       email,
-      password: hash,
+      password: hashedPassword,
       role,
-      image, // Save the base64 encoded image data directly
-      aadharNumber,
-      certificationAddress,
-      licenceNumber,
-      aadharFile,
-      certificationFile,
-      licenceFile,
-      Place,
-      mobileNumber,
-      Bio,
+      profileImage, // Base64 string for profile image
+      licenseNo,
+      licenseImage, // Base64 string for license image
+      aadharNo,
+      aadharImage, // Base64 string for Aadhar image
     });
+
     await newUser.save();
 
-    res
-      .status(201)
-      .json({ success: true, message: "User registered successfully" });
+    // Generate token with userId and role
+    const token = generateToken(newUser._id, newUser.role);
+
+    res.status(201).json({ token, user: newUser });
   } catch (error) {
-    console.error("Error registering user:", error);
-    res
-      .status(500)
-      .json({ success: false, message: "Failed to register user" });
+    res.status(500).json({ message: "Server error", error });
   }
 };
-// User login
-export const login = async (req, res) => {
+
+// Signin
+export const signin = async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    let user;
-
-    // Check if the provided credentials match admin credentials
-    if (email === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
-      // If so, create a dummy admin user object
-      user = { _id: "admin_id", role: "admin" };
-    } else {
-      // Otherwise, try to find the user in the database
-      user = await User.findOne({ email });
-
-      // If user doesn't exist, return error
-      if (!user) {
-        return res.status(404).json({
-          success: false,
-          message: "User not found",
-        });
-      }
-
-      // Check password
-      const checkCorrectPassword = await bcrypt.compare(
-        password,
-        user.password
-      );
-
-      // If password is incorrect, return error
-      if (!checkCorrectPassword) {
-        return res.status(401).json({
-          success: false,
-          message: "Incorrect Password or Email",
-        });
-      }
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(400).json({ message: "User not found" });
     }
 
-    // Generate JWT token
-    const token = jwt.sign(
-      { id: user._id, role: user.role }, // Ensure 'role' is passed here
-      process.env.JWT_SECRET_KEY,
-
-      { expiresIn: "15d" }
-    );
-
-    // Set token in browser cookies and send response to the client
-    res
-      .cookie("accessToken", token, {
-        httpOnly: true,
-        expires: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000), // 15 days in milliseconds
-      })
-      .status(200)
-      .json({
-        token,
-        data: { ...user }, // Removed _doc, as it's not required here
-        role: user.role,
-      });
-  } catch (err) {
-    res.status(500).json({ success: false, message: "Failed to login" });
-  }
-};
-
-// Update user profile
-export const updateUserProfile = async (req, res) => {
-  const { userId } = req.params;
-  const { oldPassword, newPassword, name, mobileNumber, bio, image } = req.body;
-
-  try {
-    // Check for user in User collection
-    let userFolder = await User.findById(userId);
-    if (!userFolder) {
-      // If not found in User collection, check the Admin collection
-      userFolder = await Admin.findById(userId);
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ message: "Invalid credentials" });
     }
 
-    if (!userFolder) {
-      return res.status(404).json({
-        success: false,
-        message: "User or Admin not found",
-      });
-    }
+    // Generate token with userId and role
+    const token = generateToken(user._id, user.role);
 
-    // Check if the old password is provided and if it's correct
-    if (oldPassword && newPassword) {
-      const isMatch = await bcrypt.compare(oldPassword, userFolder.password);
-      if (!isMatch) {
-        return res.status(401).json({
-          success: false,
-          message: "Old password is incorrect",
-        });
-      }
-
-      // Hash the new password
-      const salt = bcrypt.genSaltSync(10);
-      const hashedPassword = bcrypt.hashSync(newPassword, salt);
-
-      // Update the user's password
-      userFolder.password = hashedPassword;
-    }
-
-    // Update user fields
-    if (name) userFolder.username = name;
-    if (mobileNumber) userFolder.mobileNumber = mobileNumber;
-    if (bio) userFolder.bio = bio;
-    if (image) userFolder.image = image; // Assuming image is base64 encoded
-
-    // Save the updated user document
-    await userFolder.save();
-
-    res.status(200).json({
-      success: true,
-      message: "Profile updated successfully",
-      data: userFolder,
-    });
+    res.status(200).json({ token, user });
   } catch (error) {
-    console.error("Error updating user profile:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to update profile",
-    });
+    res.status(500).json({ message: "Server error", error });
   }
-};
-
-
-export const authenticateToken = (req, res, next) => {
-  const token = req.cookies.accessToken || req.headers['authorization'];
-
-  if (!token) return res.sendStatus(401);
-
-  jwt.verify(token, process.env.JWT_SECRET_KEY, (err, user) => {
-    if (err) return res.sendStatus(403);
-    req.user = user;
-    next();
-  });
 };

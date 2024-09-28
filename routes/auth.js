@@ -1,12 +1,18 @@
-import  Express  from "express";
-import {login,register,updateUserProfile} from '../controllers/authControllers.js';
 
 
-const router=Express.Router();
-router.post('/register', register);
-router.post('/login',login)
-router.put('/profileupdate/:userId', updateUserProfile);
+import express from 'express';
+import { signup, signin } from '../controllers/authControllers.js';
+// Remove upload middleware if not used
+// import upload from '../middleware/upload.js';  // Adjust this path according to your structure
 
+const router = express.Router();
 
+// Signup route
+router.post('/signup', signup); // Removed upload middleware
+
+// Signin route
+router.post('/signin', signin);
+// router.put('/profileupdate/:userId',updateUserProfile);
 
 export default router;
+
