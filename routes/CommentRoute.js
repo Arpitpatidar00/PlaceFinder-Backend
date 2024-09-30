@@ -84,4 +84,27 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
+router.get("/all", async (req, res) => {
+
+  try {
+    // Fetch comments and populate user details in a single query
+    const comments = await Comment.find()
+     
+
+    // Map comments to include user details along with fallback for profile image
+    const commentsWithUserDetails = comments.map((comment) => ({
+      ...comment.toObject(),
+      user: {
+        id: comment.userId._id,
+        name: comment.userId.name,
+        profileImage: comment.userId.profileImage || 'defaultImage.jpg', // Default image fallback
+      },
+    }));
+
+    res.json(commentsWithUserDetails);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 export default router;
