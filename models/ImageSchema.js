@@ -22,6 +22,9 @@ const placeSchema = new mongoose.Schema({
   }
 });
 
+// Create a text index for searching
+placeSchema.index({ cityName: 'text', placeName: 'text' });
+
 const Place = mongoose.model('Place', placeSchema);
 
 export default Place;

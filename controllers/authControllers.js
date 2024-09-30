@@ -1,21 +1,35 @@
 import bcrypt from "bcryptjs";
 import User from "../models/User.js";
 import { generateToken } from "../utils/jwtHelper.js";
+import { check, validationResult } from 'express-validator';
 
 // Signup
 export const signup = async (req, res) => {
+  // Input validation
+  await check('name').notEmpty().withMessage('Name is required').run(req);
+  await check('email').isEmail().withMessage('Valid email is required').run(req);
+  await check('password').isLength({ min: 5 }).withMessage('Password must be at least 5 characters long').run(req);
+  await check('role').isIn(['user', 'driver', 'guide']).withMessage('Role must be user, driver, or guide').run(req);
+  
+  // Handle validation errors
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
+  const {
+    name,
+    email,
+    password,
+    role,
+    profileImage,
+    licenseNo,
+    licenseImage,
+    aadharNo,
+    aadharImage,
+  } = req.body;
+
   try {
-    const {
-      name,
-      email,
-      password,
-      role,
-      profileImage,
-      licenseNo,
-      licenseImage,
-      aadharNo,
-      aadharImage,
-    } = req.body;
     // Check if user already exists
     const userExists = await User.findOne({ email });
     if (userExists) {
@@ -45,12 +59,23 @@ export const signup = async (req, res) => {
 
     res.status(201).json({ token, user: newUser });
   } catch (error) {
-    res.status(500).json({ message: "Server error", error });
+    console.error("Signup error:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
 // Signin
 export const signin = async (req, res) => {
+  // Input validation
+  await check('email').isEmail().withMessage('Valid email is required').run(req);
+  await check('password').notEmpty().withMessage('Password is required').run(req);
+
+  // Handle validation errors
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
   const { email, password } = req.body;
 
   try {
@@ -69,6 +94,7 @@ export const signin = async (req, res) => {
 
     res.status(200).json({ token, user });
   } catch (error) {
-    res.status(500).json({ message: "Server error", error });
+    console.error("Signin error:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
