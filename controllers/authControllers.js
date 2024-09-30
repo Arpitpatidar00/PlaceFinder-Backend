@@ -98,3 +98,49 @@ export const signin = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+
+
+
+export const updated = async (req, res) => {
+  const { name, mobileNumber, bio, newPassword, oldPassword, image } = req.body;
+
+  console.log(req.body); // For debugging
+
+  try {
+    // Fetch the user by ID
+    const user = await User.findById(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Check if the password is being updated
+    if (newPassword && oldPassword) {
+      const isMatch = await bcrypt.compare(oldPassword, user.password);
+      if (!isMatch) {
+        return res.status(400).json({ message: 'Old password is incorrect' });
+      }
+      user.password = await bcrypt.hash(newPassword, 10);
+    }
+
+    // Update user details if provided
+    if (name) user.name = name;
+    if (mobileNumber) user.mobileNumber = mobileNumber;
+    if (bio) user.bio = bio;
+
+    // Handle image update if provided
+    if (image) {
+      // You might want to validate the image format and size here
+      user.profileImage = image; // Assuming image is base64
+    }
+
+    // Save the updated user data
+    await user.save();
+
+    res.json({ message: 'Profile updated successfully', user });
+  } catch (error) {
+    console.error('Error updating profile:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+

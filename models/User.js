@@ -1,7 +1,11 @@
 import mongoose from 'mongoose';
 
 const userSchema = new mongoose.Schema({
-  name: { type: String, required: true },
+  name: { 
+    type: String, 
+    required: true,
+    maxlength: [100, 'Name cannot exceed 100 characters.'] // Maximum length for name
+  },
   email: { 
     type: String, 
     required: true, 
@@ -11,14 +15,18 @@ const userSchema = new mongoose.Schema({
   password: { 
     type: String, 
     required: true, 
-    minlength: [5, 'Password must be at least 5 characters long.'] // Minimum password length
+    minlength: [5, 'Password must be at least 5 characters long.'], // Minimum password length
+    maxlength: [100, 'Password cannot exceed 100 characters.'] // Maximum length for password
   },
   role: { 
     type: String, 
     required: true, 
-    enum: ['user', 'driver', 'guide'] 
+    enum: ['user', 'driver', 'guide'] // Enum for user roles
   },
-  profileImage: { type: String }, // Store Base64 string for profile image
+  profileImage: { 
+    type: String,
+    default: 'default-profile-image-base64-string' // Default placeholder image
+  },
   licenseNo: { 
     type: String, 
     validate: {
@@ -26,7 +34,9 @@ const userSchema = new mongoose.Schema({
       message: 'License number must be exactly 16 digits.'
     }
   },
-  licenseImage: { type: String }, // Store Base64 string for license image for drivers
+  licenseImage: { 
+    type: String // Store Base64 string for license image for drivers
+  },
   aadharNo: { 
     type: String, 
     validate: {
@@ -34,8 +44,18 @@ const userSchema = new mongoose.Schema({
       message: 'Aadhar number must be exactly 12 digits.'
     }
   },
-  aadharImage: { type: String }, // Store Base64 string for Aadhar image for guides
+  aadharImage: { 
+    type: String // Store Base64 string for Aadhar image for guides
+  },
 }, { timestamps: true });
+
+// Password hashing before saving
+userSchema.pre('save', async function(next) {
+  if (this.isModified('password')) {
+    this.password = await bcrypt.hash(this.password, 10);
+  }
+  next();
+});
 
 // Create an index on the email field for faster queries
 userSchema.index({ email: 1 });
