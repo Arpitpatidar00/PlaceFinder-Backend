@@ -1,8 +1,38 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
-# dependencies
-/Videos
+# Node modules
 /node_modules
-/.DS_Store
-/.env
+
+# Build outputs
 /build
+/public/static
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment variables
+/.env
+/.env.local
+/.env.development.local
+/.env.test.local
+/.env.production.local
+
+# MacOS files
+.DS_Store
+
+# Coverage directory used by testing tools
+/coverage
+
+# Temporary files
+*.tmp
+*.temp
+
+# IDE files
+.vscode/
+.idea/
+
+# Other files
+/.history/
+*.bak
+*.swp

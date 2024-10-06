@@ -117,10 +117,8 @@ export const signin = async (req, res) => {
 export const updated = async (req, res) => {
   try {
     const { userId } = req.params;
-    console.log("User ID:", userId);
 
     const { name, mobileNumber, bio, oldPassword, newPassword, image } = req.body;
-    console.log("Request Body:", req.body); // Log the request body
 
     // Check if the user exists
     const user = await User.findById(userId);
@@ -147,7 +145,6 @@ export const updated = async (req, res) => {
 
     // Save the updated user
     const updatedUser = await user.save();
-    console.log("Updated User:", updatedUser); // Log the updated user
     res.json({ message: "Profile updated successfully", user: updatedUser });
   } catch (error) {
     console.error("Error updating profile:", error);
